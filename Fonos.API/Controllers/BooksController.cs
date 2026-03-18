@@ -1,5 +1,7 @@
 ﻿using Fonos.API.DTOs.Books;
+using Fonos.API.DTOs.Chapters;
 using Fonos.API.Services.Books;
+using Fonos.API.Services.Chapters;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Fonos.API.Controllers
@@ -9,10 +11,11 @@ namespace Fonos.API.Controllers
     public class BooksController : ControllerBase
     {
         private readonly IBookService _bookService;
-
-        public BooksController(IBookService bookService)
+        private readonly IChapterService _chapterService;
+        public BooksController(IBookService bookService, IChapterService chapterService)
         {
             _bookService = bookService;
+            _chapterService = chapterService;
         }
 
         [HttpGet]
@@ -48,6 +51,13 @@ namespace Fonos.API.Controllers
         {
             await _bookService.DeleteBookAsync(id);
             return NoContent();
+        }
+
+        [HttpGet("{bookId}/chapters")]
+        public async Task<ActionResult<IEnumerable<ChapterDto>>> GetChapters(Guid bookId)
+        {
+            var chapters = await _chapterService.GetChaptersByBookAsync(bookId);
+            return Ok(chapters);
         }
     }
 }
