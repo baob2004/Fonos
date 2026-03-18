@@ -1,5 +1,6 @@
 ﻿using Fonos.API.DTOs.Chapters;
 using Fonos.API.Services.Chapters;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Fonos.API.Controllers
@@ -22,6 +23,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult<ChapterDto>> Create([FromBody] ChapterCreateDto command)
         {
             var result = await _chapterService.CreateChapterAsync(command);
@@ -29,6 +31,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Update(Guid id, [FromBody] ChapterUpdateDto command)
         {
             await _chapterService.UpdateChapterAsync(id, command);
@@ -36,6 +39,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpPatch("{id}/audio")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> UpdateAudio(Guid id, [FromBody] ChapterAudioUpdateDto command)
         {
             await _chapterService.UpdateAudioAsync(id, command);
@@ -43,6 +47,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Delete(Guid id)
         {
             await _chapterService.DeleteChapterAsync(id);

@@ -1,5 +1,6 @@
 ﻿using Fonos.API.DTOs.Authors;
 using Fonos.API.Services.Authors;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Fonos.API.Controllers
@@ -28,6 +29,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult<AuthorDto>> Create([FromBody] AuthorCreateDto command)
         {
             var result = await _authorService.CreateAuthorAsync(command);
@@ -35,6 +37,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Update(Guid id, [FromBody] AuthorUpdateDto command)
         {
             await _authorService.UpdateAuthorAsync(id, command);
@@ -42,6 +45,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Delete(Guid id)
         {
             await _authorService.DeleteAuthorAsync(id);

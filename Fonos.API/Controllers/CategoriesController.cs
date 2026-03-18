@@ -1,5 +1,6 @@
 ﻿using Fonos.API.DTOs.Categories;
 using Fonos.API.Services.Categories;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Fonos.API.Controllers
@@ -28,6 +29,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult<CategoryDto>> Create([FromBody] CategoryCreateDto command)
         {
             var result = await _categoryService.CreateCategoryAsync(command);
@@ -35,6 +37,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Update(Guid id, [FromBody] CategoryUpdateDto command)
         {
             await _categoryService.UpdateCategoryAsync(id, command);
@@ -42,6 +45,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Delete(Guid id)
         {
             await _categoryService.DeleteCategoryAsync(id);

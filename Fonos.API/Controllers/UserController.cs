@@ -2,6 +2,7 @@
 using Fonos.API.DTOs.Payments;
 using Fonos.API.Services.Payments;
 using Fonos.API.Services.Users;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Fonos.API.Controllers
@@ -26,6 +27,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpPost("register")]
+        [AllowAnonymous]
         public async Task<ActionResult> RegisterAsync(RegisterModel model)
         {
 
@@ -34,6 +36,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpPost("login")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetTokenAsync(TokenRequestModel model)
         {
             var result = await _userService.GetTokenAsync(model);
@@ -41,6 +44,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpPost("addrole")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> AddRoleAsync(AddRoleModel model)
         {
             var result = await _userService.AddRoleAsync(model);

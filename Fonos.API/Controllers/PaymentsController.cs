@@ -1,5 +1,6 @@
 ﻿using Fonos.API.DTOs.Payments;
 using Fonos.API.Services.Payments;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Fonos.API.Controllers
@@ -16,6 +17,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<ActionResult<PaymentDto>> Create([FromBody] PaymentCreateDto command)
         {
             var result = await _paymentService.CreatePaymentAsync(command);
@@ -23,6 +25,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize]
         public async Task<ActionResult<PaymentDto>> GetById(Guid id)
         {
             return Ok(await _paymentService.GetPaymentAsync(id));
