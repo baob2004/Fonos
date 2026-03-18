@@ -1,3 +1,6 @@
 <Solution>
-  <Project Path="Fonos.API/Fonos.API.csproj" />
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+  </Folder>
+  <Project Path="D:/Dev/Projects/Fonos/Fonos.API/Fonos.API.csproj" />
 </Solution>
