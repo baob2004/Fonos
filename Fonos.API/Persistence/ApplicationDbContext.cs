@@ -30,78 +30,55 @@ namespace Fonos.API.Persistence
                     var category = await context.Set<Category>().FirstOrDefaultAsync(c => c.Name == "Tâm linh & Triết học", cancellationToken);
                     if (category == null)
                     {
-                        category = new Category { Id = Guid.NewGuid(), Name = "Tâm linh & Triết học", Created = DateTimeOffset.UtcNow, LastModified = DateTimeOffset.UtcNow };
+                        category = Category.Create("Tâm linh & Triết học");
                         await context.Set<Category>().AddAsync(category, cancellationToken);
+                        await context.SaveChangesAsync(cancellationToken);
                     }
 
                     // 2. Seed Author
                     var author = await context.Set<Author>().FirstOrDefaultAsync(a => a.Name == "Nguyên Phong", cancellationToken);
                     if (author == null)
                     {
-                        author = new Author { Id = Guid.NewGuid(), Name = "Nguyên Phong", Created = DateTimeOffset.UtcNow, LastModified = DateTimeOffset.UtcNow };
+                        author = Author.Create("Nguyên Phong", "https://example.com/avatar-nguyen-phong.jpg");
                         await context.Set<Author>().AddAsync(author, cancellationToken);
+                        await context.SaveChangesAsync(cancellationToken);
                     }
-                    await context.SaveChangesAsync(cancellationToken);
 
-                    // 3. Seed Book
+                    // 3. Seed Book (Sử dụng hàm Create mới có AuthorId và CategoryId)
                     var book = await context.Set<Book>().FirstOrDefaultAsync(b => b.Title == "Muôn Kiếp Nhân Sinh", cancellationToken);
                     if (book == null)
                     {
-                        book = new Book
-                        {
-                            Id = Guid.NewGuid(),
-                            Title = "Muôn Kiếp Nhân Sinh",
-                            Description = "Một hành trình khám phá về luật nhân quả và luân hồi.",
-                            CoverImageUrl = "https://example.com/muon-kiep-nhan-sinh.jpg",
-                            Price = 150000,
-                            AuthorId = author.Id,
-                            CategoryId = category.Id,
-                            Created = DateTimeOffset.UtcNow,
-                            LastModified = DateTimeOffset.UtcNow
-                        };
+                        book = Book.Create(
+                            "Muôn Kiếp Nhân Sinh",
+                            "Hành trình khám phá luật nhân quả.",
+                            "https://example.com/muon-kiep-nhan-sinh.jpg",
+                            150000,
+                            author.Id,
+                            category.Id
+                        );
+
                         await context.Set<Book>().AddAsync(book, cancellationToken);
                         await context.SaveChangesAsync(cancellationToken);
 
-                        // 4. Seed Chapters cho cuốn sách vừa tạo
+                        // 4. Seed Chapters
                         if (!await context.Set<Chapter>().AnyAsync(c => c.BookId == book.Id, cancellationToken))
                         {
-                            await context.Set<Chapter>().AddRangeAsync(new List<Chapter>
-                            {
-                        new Chapter
-                        {
-                            Id = Guid.NewGuid(),
-                            BookId = book.Id,
-                            Title = "Chương 1: Sự thức tỉnh",
-                            OrderNumber = 1,
-                            ContentText = "Nội dung chương 1...",
-                            Status = AudioStatus.Completed,
-                            AudioUrl = "/audios/muon-kiep-nhan-sinh-c1.mp3",
-                            DurationInSeconds = 600,
-                            Created = DateTimeOffset.UtcNow,
-                            LastModified = DateTimeOffset.UtcNow
-                        },
-                        new Chapter
-                        {
-                            Id = Guid.NewGuid(),
-                            BookId = book.Id,
-                            Title = "Chương 2: Luân hồi",
-                            OrderNumber = 2,
-                            ContentText = "Nội dung chương 2...",
-                            Status = AudioStatus.Pending,
-                            Created = DateTimeOffset.UtcNow,
-                            LastModified = DateTimeOffset.UtcNow
-                        }
-                            }, cancellationToken);
+                            var ch1 = Chapter.Create(book.Id, 1, "Chương 1: Thức tỉnh", "Nội dung...");
+                            ch1.SetAudio("/audios/mkns-c1.mp3", 600); // Đánh dấu hoàn thành luôn
+
+                            var ch2 = Chapter.Create(book.Id, 2, "Chương 2: Luân hồi", "Nội dung...");
+
+                            await context.Set<Chapter>().AddRangeAsync(new[] { ch1, ch2 }, cancellationToken);
                             await context.SaveChangesAsync(cancellationToken);
                         }
                     }
                 })
                 .UseSeeding((context, _) =>
                 {
-                    var categoryExists = context.Set<Category>().Any(c => c.Name == "Tâm linh & Triết học");
-                    if (!categoryExists)
+                    // Logic đồng bộ tương tự nếu cần
+                    if (!context.Set<Category>().Any(c => c.Name == "Tâm linh & Triết học"))
                     {
-                        var category = new Category { Id = Guid.NewGuid(), Name = "Tâm linh & Triết học", Created = DateTimeOffset.UtcNow, LastModified = DateTimeOffset.UtcNow };
+                        var category = Category.Create("Tâm linh & Triết học");
                         context.Set<Category>().Add(category);
                         context.SaveChanges();
                     }

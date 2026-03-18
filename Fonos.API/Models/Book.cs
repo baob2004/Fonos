@@ -12,31 +12,35 @@
         public Category Category { get; set; } = null!;
         public ICollection<Chapter> Chapters { get; set; } = new List<Chapter>();
         public ICollection<UserBook> UserBooks { get; set; } = new List<UserBook>();
-        public Book(string title, string description, string coverImageUrl, decimal price)
+        public Book(string title, string description, string coverImageUrl, decimal price, Guid authorId, Guid categoryId)
         {
-            ValidInputs(title, description, coverImageUrl, price);
+            ValidInputs(title, description, coverImageUrl, price, authorId, categoryId);
 
             Title = title;
             Description = description;
             CoverImageUrl = coverImageUrl;
             Price = price;
+            AuthorId = authorId;
+            CategoryId = categoryId;
         }
-        public static Book Create(string title, string description, string coverImageUrl, decimal price)
+        public static Book Create(string title, string description, string coverImageUrl, decimal price, Guid authorId, Guid categoryId)
         {
-            return new Book(title, description, coverImageUrl, price);
+            return new Book(title, description, coverImageUrl, price, authorId, categoryId);
         }
-        public void Update(string title, string description, string coverImageUrl, decimal price)
+        public void Update(string title, string description, string coverImageUrl, decimal price, Guid authorId, Guid categoryId)
         {
-            ValidInputs(title, description, coverImageUrl, price);
+            ValidInputs(title, description, coverImageUrl, price, authorId, categoryId);
 
             Title = title;
             Description = description;
             CoverImageUrl = coverImageUrl;
             Price = price;
+            AuthorId = authorId;
+            CategoryId = categoryId;
 
             UpdateLastModified();
         }
-        private static void ValidInputs(string title, string description, string coverImageUrl, decimal price)
+        private static void ValidInputs(string title, string description, string coverImageUrl, decimal price, Guid authorId, Guid categoryId)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -53,6 +57,14 @@
             if (price<0)
             {
                 throw new ArgumentOutOfRangeException(nameof(price), "Price cannot be less than 0");
+            }
+            if (authorId == Guid.Empty)
+            {
+                throw new ArgumentException("AuthorId cannot be empty", nameof(authorId));
+            }
+            if (categoryId == Guid.Empty)
+            {
+                throw new ArgumentException("CategoryId cannot be empty", nameof(categoryId));
             }
         }
     }

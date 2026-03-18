@@ -1,5 +1,7 @@
-﻿using Fonos.API.Models;
+﻿using Fonos.API.Middlewares;
+using Fonos.API.Models;
 using Fonos.API.Persistence;
+using Fonos.API.Services.Books;
 using Fonos.API.Services.Security;
 using Fonos.API.Services.Users;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -14,11 +16,14 @@ namespace Fonos.API
     {
         public static IServiceCollection ConfigureServices(this IServiceCollection services, IConfiguration _configuration)
         {
+            services.AddProblemDetails();
+            services.AddExceptionHandler<GlobalExceptionHandler>();
             //Configuration from AppSettings
             services.Configure<JWT>(_configuration.GetSection("JWT"));
             //User Manager Service
             services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>();
             services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IBookService, BookService>();
             //Adding DB Context with MSSQL
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(

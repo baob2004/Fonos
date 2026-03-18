@@ -1,4 +1,5 @@
 using Fonos.API;
+using Fonos.API.Filters;
 using Fonos.API.Models;
 using Fonos.API.Persistence;
 using Fonos.API.Persistence.Seeding;
@@ -9,7 +10,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add<ValidationActionFilter>();
+});
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
@@ -48,6 +52,8 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "An error occurred seeding the DB.");
     }
 }
+
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 
