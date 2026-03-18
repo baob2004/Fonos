@@ -1,5 +1,6 @@
 using Fonos.API;
 using Fonos.API.Filters;
+using Fonos.API.Middlewares;
 using Fonos.API.Models;
 using Fonos.API.Persistence;
 using Fonos.API.Persistence.Seeding;
@@ -15,7 +16,10 @@ builder.Services.AddControllers(options =>
     options.Filters.Add<ValidationActionFilter>();
 });
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+});
 
 builder.Services.ConfigureServices(builder.Configuration);
 

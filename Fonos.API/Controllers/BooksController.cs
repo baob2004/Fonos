@@ -2,6 +2,7 @@
 using Fonos.API.DTOs.Chapters;
 using Fonos.API.Services.Books;
 using Fonos.API.Services.Chapters;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Fonos.API.Controllers
@@ -33,6 +34,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult<BookDto>> Create([FromBody] BookCreateDto command)
         {
             var result = await _bookService.CreateBookAsync(command);
@@ -40,6 +42,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Update(Guid id, [FromBody] BookUpdateDto command)
         {
             await _bookService.UpdateBookAsync(id, command);
@@ -47,6 +50,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Delete(Guid id)
         {
             await _bookService.DeleteBookAsync(id);
