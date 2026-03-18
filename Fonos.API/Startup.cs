@@ -1,7 +1,9 @@
 ﻿using Fonos.API.Middlewares;
 using Fonos.API.Models;
 using Fonos.API.Persistence;
+using Fonos.API.Services.Authors;
 using Fonos.API.Services.Books;
+using Fonos.API.Services.Categories;
 using Fonos.API.Services.Security;
 using Fonos.API.Services.Users;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -24,6 +26,8 @@ namespace Fonos.API
             services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IBookService, BookService>();
+            services.AddScoped<IAuthorService, AuthorService>();
+            services.AddScoped<ICategoryService, CategoryService>();
             //Adding DB Context with MSSQL
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(
