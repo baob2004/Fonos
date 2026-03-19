@@ -1,4 +1,5 @@
-﻿using Fonos.API.DTOs.Categories;
+﻿using Fonos.API.Common;
+using Fonos.API.DTOs.Categories;
 using Fonos.API.Services.Categories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,9 +18,9 @@ namespace Fonos.API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<CategoryDto>>> GetAll()
+        public async Task<ActionResult<IEnumerable<CategoryDto>>> GetAll([FromQuery] QueryFilter filter, CancellationToken cancellationToken)
         {
-            return Ok(await _categoryService.GetAllCategoriesAsync());
+            return Ok(await _categoryService.GetAllCategoriesAsync(filter,cancellationToken));
         }
 
         [HttpGet("{id}")]

@@ -1,4 +1,5 @@
-﻿using Fonos.API.DTOs.Books;
+﻿using Fonos.API.Common;
+using Fonos.API.DTOs.Books;
 using Fonos.API.DTOs.Chapters;
 using Fonos.API.Services.Books;
 using Fonos.API.Services.Chapters;
@@ -20,9 +21,9 @@ namespace Fonos.API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<BookDto>>> GetAll()
+        public async Task<ActionResult<PagedResponse<BookDto>>> GetAll([FromQuery] QueryFilter filter, CancellationToken cancellationToken)
         {
-            var books = await _bookService.GetAllBooksAsync();
+            var books = await _bookService.GetAllBooksAsync(filter,cancellationToken);
             return Ok(books);
         }
 

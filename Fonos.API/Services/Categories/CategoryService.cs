@@ -1,7 +1,9 @@
-﻿using Fonos.API.DTOs.Categories;
+﻿using Fonos.API.Common;
+using Fonos.API.DTOs.Categories;
 using Fonos.API.Models;
 using Fonos.API.Persistence;
 using Microsoft.EntityFrameworkCore;
+using static System.Net.WebRequestMethods;
 
 namespace Fonos.API.Services.Categories
 {
@@ -33,11 +35,37 @@ namespace Fonos.API.Services.Categories
             return new CategoryDto(category.Id, category.Name);
         }
 
-        public async Task<IEnumerable<CategoryDto>> GetAllCategoriesAsync()
+        public async Task<PagedResponse<CategoryDto>> GetAllCategoriesAsync(QueryFilter filter, CancellationToken cancellationToken= default)
         {
-            return await _dbContext.Categories
-                .Select(c => new CategoryDto(c.Id, c.Name))
-                .ToListAsync();
+            var pageNumber = Math.Max(1, filter.PageNumber);
+            var pageSize = Math.Clamp(filter.PageSize, 1, 50);
+
+            var query = _dbContext.Categories.AsNoTracking().AsQueryable();
+
+            // 1. Apply search filter (reduces the dataset)
+            query = query.ApplySearch(filter.Search);
+
+            // 2. Count total records AFTER filtering, BEFORE pagination
+            var totalRecords = await query.CountAsync(cancellationToken);
+
+            // 3. Apply sorting (default to Title if not specified)
+            query = query.ApplySort(
+                string.IsNullOrWhiteSpace(filter.SortBy) ? "Name" : filter.SortBy);
+
+            // 4. Apply pagination and project to DTOs
+            var categories = await query
+                .ApplyPagination(pageNumber, pageSize)
+                .Select(m => new CategoryDto(m.Id, m.Name))
+                .ToListAsync(cancellationToken);
+
+            return new PagedResponse<CategoryDto>
+            {
+                Data = categories,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalRecords = totalRecords,
+                TotalPages = (int)Math.Ceiling(totalRecords / (double)pageSize)
+            };
         }
 
         public async Task UpdateCategoryAsync(Guid id, CategoryUpdateDto command)

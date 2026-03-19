@@ -1,4 +1,5 @@
-﻿using Fonos.API.DTOs.Books;
+﻿using Fonos.API.Common;
+using Fonos.API.DTOs.Books;
 using Fonos.API.Models;
 using Fonos.API.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -40,10 +41,37 @@ namespace Fonos.API.Services.Books
             await _dbContext.SaveChangesAsync();
         }
 
-        public async Task<IEnumerable<BookDto>> GetAllBooksAsync()
+        public async Task<PagedResponse<BookDto>> GetAllBooksAsync(QueryFilter filter, CancellationToken cancellationToken = default)
         {
-            var books = await _dbContext.Books.Include(b=>b.Author).Include(b=>b.Category).Select(b => new BookDto(b.Id, b.Title, b.Description, b.CoverImageUrl, b.Price, b.Author.Name!, b.Category.Name)).ToListAsync();
-            return books;
+            var pageNumber = Math.Max(1, filter.PageNumber);
+            var pageSize = Math.Clamp(filter.PageSize, 1, 50);
+
+            var query = _dbContext.Books.Include(b=>b.Author).Include(b=>b.Category).AsNoTracking().AsQueryable();
+
+            // 1. Apply search filter (reduces the dataset)
+            query = query.ApplySearch(filter.Search);
+
+            // 2. Count total records AFTER filtering, BEFORE pagination
+            var totalRecords = await query.CountAsync(cancellationToken);
+
+            // 3. Apply sorting (default to Title if not specified)
+            query = query.ApplySort(
+                string.IsNullOrWhiteSpace(filter.SortBy) ? "Created" : filter.SortBy);
+
+            // 4. Apply pagination and project to DTOs
+            var books = await query
+                .ApplyPagination(pageNumber, pageSize)
+                .Select(b => new BookDto(b.Id, b.Title,b.Description,b.CoverImageUrl,b.Price,b.Author.Name,b.Category.Name))
+                .ToListAsync(cancellationToken);
+
+            return new PagedResponse<BookDto>
+            {
+                Data = books,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalRecords = totalRecords,
+                TotalPages = (int)Math.Ceiling(totalRecords / (double)pageSize)
+            };
         }
 
         public async Task<BookDto?> GetBookAsync(Guid id)

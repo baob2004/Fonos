@@ -61,6 +61,19 @@ namespace Fonos.API
                         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Key"]!))
                     };
                 });
+
+            //CORS
+            services.AddCors(options =>
+            {
+                options.AddPolicy("AllowAll", policy =>
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader()
+                          .AllowCredentials(); 
+                });
+            });
+
             return services;
         }
     }

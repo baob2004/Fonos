@@ -1,4 +1,5 @@
-﻿using Fonos.API.DTOs.Authors;
+﻿using Fonos.API.Common;
+using Fonos.API.DTOs.Authors;
 using Fonos.API.Services.Authors;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -17,9 +18,9 @@ namespace Fonos.API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<AuthorDto>>> GetAll()
+        public async Task<ActionResult<IEnumerable<AuthorDto>>> GetAll([FromQuery] QueryFilter filter,CancellationToken cancellationToken)
         {
-            return Ok(await _authorService.GetAllAuthorsAsync());
+            return Ok(await _authorService.GetAllAuthorsAsync(filter,cancellationToken));
         }
 
         [HttpGet("{id}")]
