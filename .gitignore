@@ -16,7 +16,7 @@ appsettings.Development.json
 appsettings.Local.json
 secrets.json
 *.env
-
+appsettings.json
 # Bỏ qua file log
 *.log
 
