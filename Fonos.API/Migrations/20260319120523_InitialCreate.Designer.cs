@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Fonos.API.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260318150002_InitialCreate")]
+    [Migration("20260319120523_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />

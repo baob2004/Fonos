@@ -39,8 +39,8 @@ namespace Fonos.API.Services.Users
                 authenticationModel.IsAuthenticated = true;
                 JwtSecurityToken jwtSecurityToken = await CreateJwtToken(user);
                 authenticationModel.Token = new JwtSecurityTokenHandler().WriteToken(jwtSecurityToken);
-                authenticationModel.Email = user.Email;
-                authenticationModel.UserName = user.UserName;
+                authenticationModel.Email = user.Email!;
+                authenticationModel.UserName = user.UserName!;
                 var rolesList = await _userManager.GetRolesAsync(user).ConfigureAwait(false);
                 authenticationModel.Roles = rolesList.ToList();
                 return authenticationModel;
@@ -88,9 +88,9 @@ namespace Fonos.API.Services.Users
 
             var claims = new[]
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
+                new Claim(JwtRegisteredClaimNames.Sub, user.UserName!),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email!),
                 new Claim("uid", user.Id)
             }
             .Union(userClaims)
@@ -127,6 +127,20 @@ namespace Fonos.API.Services.Users
                 return $"Role {model.Role} not found.";
             }
             return $"Incorrect Credentials for user {user.Email}.";
+        }
+
+        public async Task<UserDto?> GetCurrentUserAsync(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return null;
+
+            // Map sang DTO để giấu đi các trường nhạy cảm như PasswordHash, SecurityStamp...
+            return new UserDto(
+                user.Id.ToString(),
+                user.FullName,
+                user.AvatarUrl,
+                user.Email!
+            );
         }
     }
 }

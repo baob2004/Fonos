@@ -7,5 +7,6 @@ namespace Fonos.API.Services.Users
         Task<string> RegisterAsync(RegisterModel model);
         Task<AuthenticationModel> GetTokenAsync(TokenRequestModel model);
         Task<string> AddRoleAsync(AddRoleModel model);
+        Task<UserDto?> GetCurrentUserAsync(string userId);
     }
 }

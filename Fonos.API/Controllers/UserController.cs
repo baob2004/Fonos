@@ -4,6 +4,7 @@ using Fonos.API.Services.Payments;
 using Fonos.API.Services.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Fonos.API.Controllers
 {
@@ -49,6 +50,27 @@ namespace Fonos.API.Controllers
         {
             var result = await _userService.AddRoleAsync(model);
             return Ok(result);
+        }
+
+        [HttpGet("me")]
+        [Authorize] 
+        public async Task<ActionResult<UserDto>> GetCurrentUser()
+        {
+            var userId = User.FindFirstValue("uid") ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { Message = "Token không hợp lệ hoặc đã hết hạn." });
+            }
+
+            var userDto = await _userService.GetCurrentUserAsync(userId);
+
+            if (userDto == null)
+            {
+                return NotFound(new { Message = "Không tìm thấy thông tin người dùng." });
+            }
+
+            return Ok(userDto);
         }
     }
 }
