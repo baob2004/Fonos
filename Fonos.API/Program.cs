@@ -61,6 +61,8 @@ app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 
+app.UseStaticFiles();
+
 app.UseCors("AllowAll");
 
 app.UseAuthentication();

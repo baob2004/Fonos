@@ -35,7 +35,6 @@ namespace Fonos.API.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = "Administrator")]
         public async Task<ActionResult<BookDto>> Create([FromBody] BookCreateDto command)
         {
             var result = await _bookService.CreateBookAsync(command);

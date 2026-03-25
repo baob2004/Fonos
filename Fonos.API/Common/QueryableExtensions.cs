@@ -51,7 +51,8 @@ namespace Fonos.API.Common
 
             return query.Where(m =>
                 EF.Functions.Like(m.Title, $"%{search}%") ||
-                EF.Functions.Like(m.Author.Name, $"%{search}%"));
+                EF.Functions.Like(m.Author.Name, $"%{search}%") ||
+                EF.Functions.Like(m.Category.Name, $"%{search}%"));
         }
 
         public static IQueryable<Category> ApplySearch(this IQueryable<Category> query, string? search)

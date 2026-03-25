@@ -26,60 +26,83 @@ namespace Fonos.API.Persistence
             optionsBuilder
                 .UseAsyncSeeding(async (context, _, cancellationToken) =>
                 {
-                    // 1. Seed Category
-                    var category = await context.Set<Category>().FirstOrDefaultAsync(c => c.Name == "Tâm linh & Triết học", cancellationToken);
-                    if (category == null)
+                    // 1. Seed Categories (5 mục)
+                    var catNames = new[] { "Kinh doanh", "Kỹ năng sống", "Văn học", "Thiếu nhi", "Lịch sử" };
+                    foreach (var name in catNames)
                     {
-                        category = Category.Create("Tâm linh & Triết học");
-                        await context.Set<Category>().AddAsync(category, cancellationToken);
-                        await context.SaveChangesAsync(cancellationToken);
-                    }
-
-                    // 2. Seed Author
-                    var author = await context.Set<Author>().FirstOrDefaultAsync(a => a.Name == "Nguyên Phong", cancellationToken);
-                    if (author == null)
-                    {
-                        author = Author.Create("Nguyên Phong", "https://example.com/avatar-nguyen-phong.jpg");
-                        await context.Set<Author>().AddAsync(author, cancellationToken);
-                        await context.SaveChangesAsync(cancellationToken);
-                    }
-
-                    // 3. Seed Book (Sử dụng hàm Create mới có AuthorId và CategoryId)
-                    var book = await context.Set<Book>().FirstOrDefaultAsync(b => b.Title == "Muôn Kiếp Nhân Sinh", cancellationToken);
-                    if (book == null)
-                    {
-                        book = Book.Create(
-                            "Muôn Kiếp Nhân Sinh",
-                            "Hành trình khám phá luật nhân quả.",
-                            "https://example.com/muon-kiep-nhan-sinh.jpg",
-                            150000,
-                            author.Id,
-                            category.Id
-                        );
-
-                        await context.Set<Book>().AddAsync(book, cancellationToken);
-                        await context.SaveChangesAsync(cancellationToken);
-
-                        // 4. Seed Chapters
-                        if (!await context.Set<Chapter>().AnyAsync(c => c.BookId == book.Id, cancellationToken))
+                        if (!await context.Set<Category>().AnyAsync(c => c.Name == name, cancellationToken))
                         {
-                            var ch1 = Chapter.Create(book.Id, 1, "Chương 1: Thức tỉnh", "Nội dung...");
-                            ch1.SetAudio("/audios/mkns-c1.mp3", 600); // Đánh dấu hoàn thành luôn
-
-                            var ch2 = Chapter.Create(book.Id, 2, "Chương 2: Luân hồi", "Nội dung...");
-
-                            await context.Set<Chapter>().AddRangeAsync(new[] { ch1, ch2 }, cancellationToken);
-                            await context.SaveChangesAsync(cancellationToken);
+                            await context.Set<Category>().AddAsync(Category.Create(name), cancellationToken);
                         }
                     }
+                    await context.SaveChangesAsync(cancellationToken);
+
+                    // 2. Seed Authors (5 mục)
+                    var authorsData = new[] {
+                (N: "Dale Carnegie", A: "https://example.com/dale.jpg"),
+                (N: "Paulo Coelho", A: "https://example.com/paulo.jpg"),
+                (N: "Haruki Murakami", A: "https://example.com/haruki.jpg"),
+                (N: "Nguyễn Nhật Ánh", A: "https://example.com/nhatanh.jpg"),
+                (N: "Yuval Noah Harari", A: "https://example.com/yuval.jpg")
+                    };
+                    foreach (var auth in authorsData)
+                    {
+                        if (!await context.Set<Author>().AnyAsync(a => a.Name == auth.N, cancellationToken))
+                        {
+                            await context.Set<Author>().AddAsync(Author.Create(auth.N, auth.A), cancellationToken);
+                        }
+                    }
+                    await context.SaveChangesAsync(cancellationToken);
+
+                    // 3. Seed Books & Chapters (5 mục)
+                    var businessCat = await context.Set<Category>().FirstAsync(c => c.Name == "Kinh doanh", cancellationToken);
+                    var daleAuthor = await context.Set<Author>().FirstAsync(a => a.Name == "Dale Carnegie", cancellationToken);
+
+                    var bookNames = new[] { "Đắc Nhân Tâm", "Nhà Giả Kim", "Rừng Na Uy", "Sapiens", "Mắt Biếc" };
+                    foreach (var title in bookNames)
+                    {
+                        var bookExists = await context.Set<Book>().AnyAsync(b => b.Title == title, cancellationToken);
+                        if (!bookExists)
+                        {
+                            var newBook = Book.Create(title, $"Mô tả cho {title}", "https://example.com/cover.jpg", 120000, daleAuthor.Id, businessCat.Id);
+                            await context.Set<Book>().AddAsync(newBook, cancellationToken);
+                            await context.SaveChangesAsync(cancellationToken);
+
+                            // Seed Chapters cho mỗi sách
+                            var ch1 = Chapter.Create(newBook.Id, 1, "Chương 1: Khởi đầu", "Nội dung...");
+                            ch1.SetAudio($"/audios/{title}-c1.mp3", 600);
+                            await context.Set<Chapter>().AddAsync(ch1, cancellationToken);
+                        }
+                    }
+                    await context.SaveChangesAsync(cancellationToken);
                 })
                 .UseSeeding((context, _) =>
                 {
-                    // Logic đồng bộ tương tự nếu cần
-                    if (!context.Set<Category>().Any(c => c.Name == "Tâm linh & Triết học"))
+                    // CẦN THIẾT: Logic đồng bộ tương tự như trên để tránh lỗi
+                    var catNames = new[] { "Kinh doanh", "Kỹ năng sống", "Văn học", "Thiếu nhi", "Lịch sử" };
+                    foreach (var name in catNames)
                     {
-                        var category = Category.Create("Tâm linh & Triết học");
-                        context.Set<Category>().Add(category);
+                        if (!context.Set<Category>().Any(c => c.Name == name))
+                        {
+                            context.Set<Category>().Add(Category.Create(name));
+                        }
+                    }
+                    context.SaveChanges();
+
+                    var authorName = "Dale Carnegie";
+                    if (!context.Set<Author>().Any(a => a.Name == authorName))
+                    {
+                        context.Set<Author>().Add(Author.Create(authorName, "https://example.com/dale.jpg"));
+                        context.SaveChanges();
+                    }
+
+                    var cat = context.Set<Category>().First(c => c.Name == "Kinh doanh");
+                    var auth = context.Set<Author>().First(a => a.Name == authorName);
+
+                    if (!context.Set<Book>().Any(b => b.Title == "Đắc Nhân Tâm"))
+                    {
+                        var book = Book.Create("Đắc Nhân Tâm", "Mô tả", "url", 120000, auth.Id, cat.Id);
+                        context.Set<Book>().Add(book);
                         context.SaveChanges();
                     }
                 });
