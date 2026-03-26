@@ -24,7 +24,7 @@ namespace Fonos.API.Services.Categories
             await _dbContext.Categories.AddAsync(category);
             await _dbContext.SaveChangesAsync();
 
-            return new CategoryDto(category.Id, category.Name);
+            return new CategoryDto(category.Id, category.Name, category.Books.Count());
         }
 
         public async Task<CategoryDto> GetCategoryAsync(Guid id)
@@ -32,7 +32,7 @@ namespace Fonos.API.Services.Categories
             var category = await _dbContext.Categories.FindAsync(id)
                            ?? throw new KeyNotFoundException("Invalid Category Id");
 
-            return new CategoryDto(category.Id, category.Name);
+            return new CategoryDto(category.Id, category.Name, category.Books.Count());
         }
 
         public async Task<PagedResponse<CategoryDto>> GetAllCategoriesAsync(QueryFilter filter, CancellationToken cancellationToken= default)
@@ -40,7 +40,7 @@ namespace Fonos.API.Services.Categories
             var pageNumber = Math.Max(1, filter.PageNumber);
             var pageSize = Math.Clamp(filter.PageSize, 1, 50);
 
-            var query = _dbContext.Categories.AsNoTracking().AsQueryable();
+            var query = _dbContext.Categories.Include(c=>c.Books).AsNoTracking().AsQueryable();
 
             // 1. Apply search filter (reduces the dataset)
             query = query.ApplySearch(filter.Search);
@@ -55,7 +55,7 @@ namespace Fonos.API.Services.Categories
             // 4. Apply pagination and project to DTOs
             var categories = await query
                 .ApplyPagination(pageNumber, pageSize)
-                .Select(m => new CategoryDto(m.Id, m.Name))
+                .Select(m => new CategoryDto(m.Id, m.Name, m.Books.Count()))
                 .ToListAsync(cancellationToken);
 
             return new PagedResponse<CategoryDto>

@@ -21,20 +21,31 @@
 
         private Chapter() { }
 
-        private Chapter(Guid bookId, int orderNumber, string title, string? contentText)
+        private Chapter(Guid bookId, int orderNumber, string title, string? contentText, string? audioUrl = null)
         {
             ValidateInputs(title, orderNumber);
             BookId = bookId;
             OrderNumber = orderNumber;
             Title = title;
             ContentText = contentText;
-            Status = AudioStatus.Pending;
+
+            if (!string.IsNullOrWhiteSpace(audioUrl))
+            {
+                AudioUrl = audioUrl;
+                DurationInSeconds = 1;
+                Status = AudioStatus.Completed;
+            }
+            else
+            {
+                Status = AudioStatus.Pending;
+            }
         }
 
-        public static Chapter Create(Guid bookId, int orderNumber, string title, string? contentText)
+        public static Chapter Create(Guid bookId, int orderNumber, string title, string? contentText, string? audioUrl = null)
         {
-            return new Chapter(bookId, orderNumber, title, contentText);
+            return new Chapter(bookId, orderNumber, title, contentText, audioUrl);
         }
+
 
         public void Update(int orderNumber, string title, string? contentText)
         {

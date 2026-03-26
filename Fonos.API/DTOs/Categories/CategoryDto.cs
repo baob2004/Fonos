@@ -1,4 +1,4 @@
 ﻿namespace Fonos.API.DTOs.Categories
 {
-    public record CategoryDto(Guid Id, string Name);
+    public record CategoryDto(Guid Id, string Name, int BookCount);
 }

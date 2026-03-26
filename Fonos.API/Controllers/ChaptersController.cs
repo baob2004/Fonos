@@ -53,5 +53,23 @@ namespace Fonos.API.Controllers
             await _chapterService.DeleteChapterAsync(id);
             return NoContent();
         }
+
+        [HttpPost("upload")]
+        [Authorize(Roles = "Administrator")] 
+        public async Task<ActionResult<ChapterDto>> CreateWithUpload([FromForm] ChapterUploadDto dto)
+        {
+            if (dto.AudioFile == null || dto.AudioFile.Length == 0)
+                return BadRequest("Vui lòng chọn file audio.");
+
+            try
+            {
+                var result = await _chapterService.CreateWithUploadAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi hệ thống: {ex.Message}");
+            }
+        }
     }
 }

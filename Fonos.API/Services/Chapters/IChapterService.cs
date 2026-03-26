@@ -1,4 +1,5 @@
 ﻿using Fonos.API.DTOs.Chapters;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Fonos.API.Services.Chapters
 {
@@ -10,5 +11,6 @@ namespace Fonos.API.Services.Chapters
         Task UpdateChapterAsync(Guid id, ChapterUpdateDto command);
         Task DeleteChapterAsync(Guid id);
         Task UpdateAudioAsync(Guid id, ChapterAudioUpdateDto command);
+        Task<ChapterDto> CreateWithUploadAsync(ChapterUploadDto dto);
     }
 }
