@@ -29,7 +29,7 @@ namespace Fonos.API.Services.Books
             await _dbContext.Books.AddAsync(book);
             await _dbContext.SaveChangesAsync();
 
-            return new BookDto(book.Id, book.Title, book.Description, book.CoverImageUrl, book.Price, author.Name, category.Name);
+            return new BookDto(book.Id, book.Title, book.Description, book.CoverImageUrl, book.Price, author.Name, category.Name, book.Chapters.Sum(c => c.DurationInSeconds) / 60);
         }
 
         public async Task DeleteBookAsync(Guid id)
@@ -46,7 +46,7 @@ namespace Fonos.API.Services.Books
             var pageNumber = Math.Max(1, filter.PageNumber);
             var pageSize = Math.Clamp(filter.PageSize, 1, 50);
 
-            var query = _dbContext.Books.Include(b=>b.Author).Include(b=>b.Category).AsNoTracking().AsQueryable();
+            var query = _dbContext.Books.Include(b=>b.Author).Include(b=>b.Category).Include(b=>b.Chapters).AsNoTracking().AsQueryable();
 
             // 1. Apply search filter (reduces the dataset)
             query = query.ApplySearch(filter.Search);
@@ -61,7 +61,7 @@ namespace Fonos.API.Services.Books
             // 4. Apply pagination and project to DTOs
             var books = await query
                 .ApplyPagination(pageNumber, pageSize)
-                .Select(b => new BookDto(b.Id, b.Title,b.Description,b.CoverImageUrl,b.Price,b.Author.Name,b.Category.Name))
+                .Select(b => new BookDto(b.Id, b.Title,b.Description,b.CoverImageUrl,b.Price,b.Author.Name,b.Category.Name, b.Chapters.Sum(c => c.DurationInSeconds) / 60))
                 .ToListAsync(cancellationToken);
 
             return new PagedResponse<BookDto>
@@ -76,10 +76,10 @@ namespace Fonos.API.Services.Books
 
         public async Task<BookDto?> GetBookAsync(Guid id)
         {
-            var book = await _dbContext.Books.Include(b => b.Author).Include(b => b.Category).FirstOrDefaultAsync(b => b.Id == id);
+            var book = await _dbContext.Books.Include(b => b.Author).Include(b => b.Category).Include(b=>b.Chapters).FirstOrDefaultAsync(b => b.Id == id);
             if (book == null) throw new KeyNotFoundException("Invalid Book Id");
 
-            return new BookDto(book.Id, book.Title, book.Description, book.CoverImageUrl, book.Price, book.Author.Name!, book.Category.Name!);
+            return new BookDto(book.Id, book.Title, book.Description, book.CoverImageUrl, book.Price, book.Author.Name!, book.Category.Name!, book.Chapters.Sum(c => c.DurationInSeconds) / 60);
         }
 
         public async Task UpdateBookAsync(Guid id, BookUpdateDto command)
@@ -97,6 +97,63 @@ namespace Fonos.API.Services.Books
 
             book.Update(command.Title, command.Description, command.CoverImageUrl, command.Price, command.AuthorId, command.CategoryId);
             await _dbContext.SaveChangesAsync();
+        }
+
+        public async Task<PagedResponse<BookDto>> GetPurchasedBooksAsync(string userId, QueryFilter filter, CancellationToken cancellationToken = default)
+        {
+            var pageNumber = Math.Max(1, filter.PageNumber);
+            var pageSize = Math.Clamp(filter.PageSize, 1, 50);
+
+            var query = _dbContext.UserBooks
+                .Where(ub => ub.UserId == userId)
+                .Include(ub => ub.Book)
+                    .ThenInclude(b => b.Author)
+                .Include(ub => ub.Book.Category)
+                .Include(ub => ub.Book.Chapters)
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(filter.Search))
+            {
+                var search = filter.Search.ToLower();
+                query = query.Where(ub =>
+                    ub.Book.Title.ToLower().Contains(search) ||
+                    ub.Book.Author.Name.ToLower().Contains(search));
+            }
+
+            var totalRecords = await query.CountAsync(cancellationToken);
+
+            query = query.OrderByDescending(ub => ub.PurchaseDate);
+
+            var books = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(ub => new BookDto(
+                    ub.Book.Id,
+                    ub.Book.Title,
+                    ub.Book.Description,
+                    ub.Book.CoverImageUrl,
+                    ub.Book.Price,
+                    ub.Book.Author.Name,
+                    ub.Book.Category.Name,
+                    ub.Book.Chapters.Sum(c => c.DurationInSeconds) / 60
+                ))
+                .ToListAsync(cancellationToken);
+
+            return new PagedResponse<BookDto>
+            {
+                Data = books,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalRecords = totalRecords,
+                TotalPages = (int)Math.Ceiling(totalRecords / (double)pageSize)
+            };
+        }
+
+        public async Task<bool> CheckOwnershipAsync(string userId, Guid bookId)
+        {
+            return await _dbContext.UserBooks
+                .AnyAsync(ub => ub.UserId == userId && ub.BookId == bookId);
         }
     }
 }

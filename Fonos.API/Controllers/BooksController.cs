@@ -60,8 +60,34 @@ namespace Fonos.API.Controllers
         [HttpGet("{bookId}/chapters")]
         public async Task<ActionResult<IEnumerable<ChapterDto>>> GetChapters(Guid bookId)
         {
-            var chapters = await _chapterService.GetChaptersByBookAsync(bookId);
+            var userId = User.FindFirst("uid")?.Value;
+
+            var chapters = await _chapterService.GetChaptersByBookAsync(bookId, userId);
             return Ok(chapters);
+        }
+
+        [HttpGet("purchased")]
+        [Authorize]
+        public async Task<ActionResult<PagedResponse<BookDto>>> GetPurchased([FromQuery] QueryFilter filter, CancellationToken ct)
+        {
+            var userId = User.FindFirst("uid")?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var result = await _bookService.GetPurchasedBooksAsync(userId, filter, ct);
+            return Ok(result);
+        }
+
+        [HttpGet("{id}/ownership")]
+        [Authorize]
+        public async Task<ActionResult<bool>> CheckOwnership(Guid id)
+        {
+            var userId = User.FindFirst("uid")?.Value;
+
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var isOwned = await _bookService.CheckOwnershipAsync(userId, id);
+
+            return Ok(isOwned);
         }
     }
 }

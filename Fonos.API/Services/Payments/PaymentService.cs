@@ -16,21 +16,53 @@ namespace Fonos.API.Services.Payments
 
         public async Task<PaymentDto> CreatePaymentAsync(PaymentCreateDto command)
         {
-            var userExists = await _dbContext.Users.AnyAsync(u => u.Id.ToString() == command.UserId);
-            if (!userExists) throw new KeyNotFoundException("User not found");
+            // Sử dụng Transaction để đảm bảo nếu tạo UserBook lỗi thì Payment cũng không được lưu
+            using var transaction = await _dbContext.Database.BeginTransactionAsync();
 
-            var payment = Payment.Create(
-                command.UserId,
-                command.Amount,
-                command.TransactionId,
-                command.PaymentMethod,
-                command.Description
-            );
+            try
+            {
+                // 1. Kiểm tra User tồn tại
+                var user = await _dbContext.Users
+                    .Include(u => u.PurchasedBooks)
+                    .FirstOrDefaultAsync(u => u.Id == command.UserId);
 
-            await _dbContext.Payments.AddAsync(payment);
-            await _dbContext.SaveChangesAsync();
+                if (user == null) throw new KeyNotFoundException("Người dùng không tồn tại.");
 
-            return MapToDto(payment);
+                // 2. Kiểm tra xem sách đã có trong thư viện chưa (Tránh đăng ký trùng)
+                var isAlreadyOwned = user.PurchasedBooks.Any(pb => pb.BookId == command.BookId);
+                if (isAlreadyOwned)
+                {
+                    throw new InvalidOperationException("Sách này đã có trong thư viện của bạn.");
+                }
+
+                // 3. Tạo bản ghi Thanh toán (Payment)
+                var payment = Payment.Create(
+                    command.UserId,
+                    command.Amount,
+                    command.TransactionId, // Mã GD từ VNPay sẽ truyền vào đây
+                    command.PaymentMethod,
+                    command.Description
+                );
+
+                // 4. Tạo bản ghi Sở hữu sách (UserBook)
+                var userBook = UserBook.Create(command.UserId, command.BookId);
+
+                // 5. Lưu vào Database
+                await _dbContext.Payments.AddAsync(payment);
+                await _dbContext.UserBooks.AddAsync(userBook);
+
+                await _dbContext.SaveChangesAsync();
+
+                // Xác nhận hoàn tất
+                await transaction.CommitAsync();
+
+                return MapToDto(payment);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw new Exception($"Lỗi xử lý đăng ký sách: {ex.Message}");
+            }
         }
 
         public async Task CompletePaymentAsync(Guid id)

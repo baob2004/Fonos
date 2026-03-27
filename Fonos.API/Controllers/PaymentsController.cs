@@ -2,6 +2,7 @@
 using Fonos.API.Services.Payments;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Fonos.API.Controllers
 {
@@ -20,7 +21,17 @@ namespace Fonos.API.Controllers
         [Authorize]
         public async Task<ActionResult<PaymentDto>> Create([FromBody] PaymentCreateDto command)
         {
-            var result = await _paymentService.CreatePaymentAsync(command);
+            var userId = User.FindFirst("uid")?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized("Không tìm thấy thông tin định danh trong Token.");
+            }
+
+            var secureCommand = command with { UserId = userId };
+
+            var result = await _paymentService.CreatePaymentAsync(secureCommand);
+
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
 

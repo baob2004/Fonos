@@ -10,5 +10,7 @@ namespace Fonos.API.Services.Books
         Task<BookDto> CreateBookAsync(BookCreateDto command);
         Task UpdateBookAsync(Guid id, BookUpdateDto command);
         Task DeleteBookAsync(Guid id);
+        Task<PagedResponse<BookDto>> GetPurchasedBooksAsync(string userId, QueryFilter filter, CancellationToken cancellationToken = default);
+        Task<bool> CheckOwnershipAsync(string userId, Guid bookId);
     }
 }
