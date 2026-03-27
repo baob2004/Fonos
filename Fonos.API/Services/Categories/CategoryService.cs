@@ -18,7 +18,6 @@ namespace Fonos.API.Services.Categories
 
         public async Task<CategoryDto> CreateCategoryAsync(CategoryCreateDto command)
         {
-            // Sử dụng hàm Create từ Domain Model của Bảo
             var category = Category.Create(command.Name);
 
             await _dbContext.Categories.AddAsync(category);

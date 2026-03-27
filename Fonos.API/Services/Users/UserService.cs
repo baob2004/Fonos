@@ -134,7 +134,6 @@ namespace Fonos.API.Services.Users
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return null;
 
-            // Map sang DTO để giấu đi các trường nhạy cảm như PasswordHash, SecurityStamp...
             return new UserDto(
                 user.Id.ToString(),
                 user.FullName,
@@ -148,33 +147,26 @@ namespace Fonos.API.Services.Users
             var user = await _userManager.FindByIdAsync(userId);
             if (user == null) return "User not found";
 
-            // 1. Xử lý Upload file nếu người dùng có chọn ảnh mới
             if (avatarFile != null && avatarFile.Length > 0)
             {
-                // Trỏ thẳng vào thư mục wwwroot/images trong project
                 var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
 
-                // Tạo thư mục nếu chưa có
                 if (!Directory.Exists(folderPath))
                 {
                     Directory.CreateDirectory(folderPath);
                 }
 
-                // Tạo tên file duy nhất để không bị ghi đè (VD: 20260327_abc.png)
                 var fileName = $"{Guid.NewGuid()}{Path.GetExtension(avatarFile.FileName)}";
                 var filePath = Path.Combine(folderPath, fileName);
 
-                // Lưu file vật lý vào ổ đĩa D:\Dev\Projects\Fonos\...
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await avatarFile.CopyToAsync(stream);
                 }
 
-                // Cập nhật đường dẫn vào Database (Lưu đường dẫn tương đối để dễ hiển thị)
                 user.AvatarUrl = $"/images/{fileName}";
             }
 
-            // 2. Cập nhật các thông tin khác
             user.FullName = fullName;
 
             var result = await _userManager.UpdateAsync(user);

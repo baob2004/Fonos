@@ -78,23 +78,19 @@ namespace Fonos.API.Controllers
         [Authorize]
         public async Task<IActionResult> VnPayReturn()
         {
-            // Lấy toàn bộ tham số từ URL mà VNPay gửi về trình duyệt
             var vnpayData = Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString());
 
-            // Lấy UserId từ Token (Bearer)
             var userId = User.FindFirst("uid")?.Value;
             if (string.IsNullOrEmpty(userId)) return Unauthorized("Không tìm thấy UserId trong Token.");
 
             try
             {
-                // Gọi hàm xử lý mà Bảo vừa viết trong PaymentService
                 var result = await _paymentService.ProcessVnPayCallbackAsync(vnpayData, userId);
 
-                return Ok(result); // Trả về cho React để hiện nút "Thành công"
+                return Ok(result); 
             }
             catch (Exception ex)
             {
-                // Nếu lỗi ở đây, DB sẽ không lưu (do có transaction rollback)
                 return BadRequest(new { message = ex.Message });
             }
         }

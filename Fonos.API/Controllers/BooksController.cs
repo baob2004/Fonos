@@ -35,7 +35,7 @@ namespace Fonos.API.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<BookDto>> Create([FromBody] BookCreateDto command)
+        public async Task<ActionResult<BookDto>> Create([FromForm] BookCreateDto command)
         {
             var result = await _bookService.CreateBookAsync(command);
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
@@ -43,10 +43,10 @@ namespace Fonos.API.Controllers
 
         [HttpPut("{id}")]
         [Authorize(Roles = "Administrator")]
-        public async Task<IActionResult> Update(Guid id, [FromBody] BookUpdateDto command)
+        public async Task<IActionResult> Update(Guid id, [FromForm] BookUpdateDto command)
         {
             await _bookService.UpdateBookAsync(id, command);
-            return NoContent();
+            return Ok(new { message = "Cập nhật sách thành công!" });
         }
 
         [HttpDelete("{id}")]

@@ -16,20 +16,35 @@ namespace Fonos.API.Services.Books
         }
         public async Task<BookDto> CreateBookAsync(BookCreateDto command)
         {
-            //Validate
             var author = await _dbContext.Authors.FindAsync(command.AuthorId)
-                             ?? throw new KeyNotFoundException("Invalid Author Id");
-
+                         ?? throw new KeyNotFoundException("Invalid Author Id");
             var category = await _dbContext.Categories.FindAsync(command.CategoryId)
-                         ?? throw new KeyNotFoundException("Invalid Category Id");
+                           ?? throw new KeyNotFoundException("Invalid Category Id");
 
-            //Create
-            var book = Book.Create(command.Title, command.Description, command.CoverImageUrl, command.Price, command.AuthorId, command.CategoryId);
+            string coverPath = "/images/default-book.png"; 
+
+            // Xử lý Upload file ảnh bìa
+            if (command.CoverImageFile != null && command.CoverImageFile.Length > 0)
+            {
+                var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+                if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+
+                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(command.CoverImageFile.FileName)}";
+                var filePath = Path.Combine(folderPath, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await command.CoverImageFile.CopyToAsync(stream);
+                }
+                coverPath = $"/images/{fileName}";
+            }
+
+            var book = Book.Create(command.Title, command.Description, coverPath, command.Price, command.AuthorId, command.CategoryId);
 
             await _dbContext.Books.AddAsync(book);
             await _dbContext.SaveChangesAsync();
 
-            return new BookDto(book.Id, book.Title, book.Description, book.CoverImageUrl, book.Price, author.Name, category.Name, book.Chapters.Sum(c => c.DurationInSeconds) / 60);
+            return new BookDto(book.Id, book.Title, book.Description, book.CoverImageUrl, book.Price, author.Name, category.Name, 0);
         }
 
         public async Task DeleteBookAsync(Guid id)
@@ -83,19 +98,52 @@ namespace Fonos.API.Services.Books
         }
 
         public async Task UpdateBookAsync(Guid id, BookUpdateDto command)
-        {            
-            //Validate
+        {
+            var book = await _dbContext.Books.FirstOrDefaultAsync(b => b.Id == id);
+            if (book == null) throw new KeyNotFoundException("Không tìm thấy sách với Id này.");
+
             var authorExists = await _dbContext.Authors.AnyAsync(a => a.Id == command.AuthorId);
-            if (!authorExists) throw new KeyNotFoundException("Invalid Author Id");
+            if (!authorExists) throw new KeyNotFoundException("Mã tác giả không hợp lệ.");
 
             var categoryExists = await _dbContext.Categories.AnyAsync(a => a.Id == command.CategoryId);
-            if (!categoryExists) throw new KeyNotFoundException("Invalid Category Id");
+            if (!categoryExists) throw new KeyNotFoundException("Mã thể loại không hợp lệ.");
 
-            //Update
-            var book = await _dbContext.Books.FirstOrDefaultAsync(b => b.Id == id);
-            if (book == null) throw new KeyNotFoundException("Invalid Book Id");
+            string finalCoverUrl = book.CoverImageUrl; 
 
-            book.Update(command.Title, command.Description, command.CoverImageUrl, command.Price, command.AuthorId, command.CategoryId);
+            if (command.CoverImageFile != null && command.CoverImageFile.Length > 0)
+            {
+                var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+                if (!Directory.Exists(folderPath)) Directory.CreateDirectory(folderPath);
+
+                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(command.CoverImageFile.FileName)}";
+                var filePath = Path.Combine(folderPath, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await command.CoverImageFile.CopyToAsync(stream);
+                }
+
+                if (!string.IsNullOrEmpty(book.CoverImageUrl) && book.CoverImageUrl.StartsWith("/images/"))
+                {
+                    var oldFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", book.CoverImageUrl.TrimStart('/'));
+                    if (File.Exists(oldFilePath))
+                    {
+                        File.Delete(oldFilePath);
+                    }
+                }
+
+                finalCoverUrl = $"/images/{fileName}";
+            }
+
+            book.Update(
+                command.Title,
+                command.Description,
+                finalCoverUrl, 
+                command.Price,
+                command.AuthorId,
+                command.CategoryId
+            );
+
             await _dbContext.SaveChangesAsync();
         }
 
