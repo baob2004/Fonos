@@ -8,5 +8,7 @@ namespace Fonos.API.Services.Users
         Task<AuthenticationModel> GetTokenAsync(TokenRequestModel model);
         Task<string> AddRoleAsync(AddRoleModel model);
         Task<UserDto?> GetCurrentUserAsync(string userId);
+        Task<string> UpdateProfileAsync(string userId, string fullName, IFormFile? avatarFile);
+        Task<string> ChangePasswordAsync(string userId, string currentPassword, string newPassword);
     }
 }

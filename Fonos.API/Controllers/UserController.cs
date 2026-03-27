@@ -1,8 +1,10 @@
 ﻿using Fonos.API.DTOs.Auth;
 using Fonos.API.DTOs.Payments;
+using Fonos.API.Models;
 using Fonos.API.Services.Payments;
 using Fonos.API.Services.Users;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -14,10 +16,12 @@ namespace Fonos.API.Controllers
     {
         private readonly IUserService _userService;
         private readonly IPaymentService _paymentService;
-        public UserController(IUserService userService, IPaymentService paymentService)
+        private readonly UserManager<ApplicationUser> _userManager;
+        public UserController(IUserService userService, IPaymentService paymentService, UserManager<ApplicationUser> userManager)
         {
             _userService = userService;
             _paymentService = paymentService;
+            _userManager = userManager;
         }
 
         [HttpGet("{userId}/payments")]
@@ -71,6 +75,41 @@ namespace Fonos.API.Controllers
             }
 
             return Ok(userDto);
+        }
+
+        [HttpPut("update-profile")]
+        [Authorize]
+        public async Task<IActionResult> UpdateProfile([FromForm] UpdateProfileDto model)
+        {
+            var userId = User.FindFirst("uid")?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            // Gọi service xử lý
+            var result = await _userService.UpdateProfileAsync(userId, model.FullName, model.AvatarFile);
+
+            if (result.Contains("successfully"))
+            {
+                // Lấy lại user để trả về AvatarUrl mới cho Frontend cập nhật ngay
+                var user = await _userManager.FindByIdAsync(userId);
+                return Ok(new { message = result, avatarUrl = user.AvatarUrl });
+            }
+
+            return BadRequest(new { message = result });
+        }
+        public class UpdateProfileDto
+        {
+            public string FullName { get; set; } = string.Empty;
+            public IFormFile? AvatarFile { get; set; }
+        }
+
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto model)
+        {
+            var userId = User.FindFirstValue("uid");
+            var result = await _userService.ChangePasswordAsync(userId, model.CurrentPassword, model.NewPassword);
+
+            if (result.Contains("successfully")) return Ok(new { message = result });
+            return BadRequest(new { message = result });
         }
     }
 }

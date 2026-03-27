@@ -142,5 +142,59 @@ namespace Fonos.API.Services.Users
                 user.Email!
             );
         }
+
+        public async Task<string> UpdateProfileAsync(string userId, string fullName, IFormFile? avatarFile)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return "User not found";
+
+            // 1. Xử lý Upload file nếu người dùng có chọn ảnh mới
+            if (avatarFile != null && avatarFile.Length > 0)
+            {
+                // Trỏ thẳng vào thư mục wwwroot/images trong project
+                var folderPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images");
+
+                // Tạo thư mục nếu chưa có
+                if (!Directory.Exists(folderPath))
+                {
+                    Directory.CreateDirectory(folderPath);
+                }
+
+                // Tạo tên file duy nhất để không bị ghi đè (VD: 20260327_abc.png)
+                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(avatarFile.FileName)}";
+                var filePath = Path.Combine(folderPath, fileName);
+
+                // Lưu file vật lý vào ổ đĩa D:\Dev\Projects\Fonos\...
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await avatarFile.CopyToAsync(stream);
+                }
+
+                // Cập nhật đường dẫn vào Database (Lưu đường dẫn tương đối để dễ hiển thị)
+                user.AvatarUrl = $"/images/{fileName}";
+            }
+
+            // 2. Cập nhật các thông tin khác
+            user.FullName = fullName;
+
+            var result = await _userManager.UpdateAsync(user);
+            return result.Succeeded ? "Profile updated successfully" : "Failed to update profile";
+        }
+
+        public async Task<string> ChangePasswordAsync(string userId, string currentPassword, string newPassword)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return "User not found";
+
+            var result = await _userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+
+            if (!result.Succeeded)
+            {
+                var error = result.Errors.FirstOrDefault()?.Description ?? "Failed to change password";
+                return error;
+            }
+
+            return "Password changed successfully";
+        }
     }
 }

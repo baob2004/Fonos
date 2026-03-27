@@ -9,5 +9,7 @@ namespace Fonos.API.Services.Payments
         Task<IEnumerable<PaymentDto>> GetUserPaymentsAsync(string userId);
         Task CompletePaymentAsync(Guid id);
         Task CancelPaymentAsync(Guid id);
+        Task<string> CreateVnPayUrlAsync(Guid bookId, string userId, string ipAddress);
+        Task<PaymentDto> ProcessVnPayCallbackAsync(IDictionary<string, string> vnpayData, string userId);
     }
 }

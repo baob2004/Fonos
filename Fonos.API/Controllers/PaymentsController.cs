@@ -55,5 +55,48 @@ namespace Fonos.API.Controllers
             await _paymentService.CancelPaymentAsync(id);
             return NoContent();
         }
+
+        [HttpPost("create-vnpay-url")]
+        [Authorize]
+        public async Task<IActionResult> CreateUrl([FromBody] Guid bookId)
+        {
+            var userId = User.FindFirst("uid")?.Value;
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+
+            try
+            {
+                var url = await _paymentService.CreateVnPayUrlAsync(bookId, userId, ipAddress);
+                return Ok(new { paymentUrl = url });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("vnpay-return")]
+        [Authorize]
+        public async Task<IActionResult> VnPayReturn()
+        {
+            // Lấy toàn bộ tham số từ URL mà VNPay gửi về trình duyệt
+            var vnpayData = Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString());
+
+            // Lấy UserId từ Token (Bearer)
+            var userId = User.FindFirst("uid")?.Value;
+            if (string.IsNullOrEmpty(userId)) return Unauthorized("Không tìm thấy UserId trong Token.");
+
+            try
+            {
+                // Gọi hàm xử lý mà Bảo vừa viết trong PaymentService
+                var result = await _paymentService.ProcessVnPayCallbackAsync(vnpayData, userId);
+
+                return Ok(result); // Trả về cho React để hiện nút "Thành công"
+            }
+            catch (Exception ex)
+            {
+                // Nếu lỗi ở đây, DB sẽ không lưu (do có transaction rollback)
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }
